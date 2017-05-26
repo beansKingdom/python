@@ -52,8 +52,10 @@ class open_commit_frame():
             
         # add commit button and query button
         commit_bt = Button(self.commit_frame, text="commit", command=self.commit, **self.bt_conf)
+        commit_bt.bind('<Return>', self.commit)
         commit_bt.grid(row=rowline + 1, column=0, pady=5)
         query_bt = Button(self.commit_frame, text="query", command=self.query, **self.bt_conf)
+        query_bt.bind('<Return>', self.query)
         query_bt.grid(row=rowline + 1, column=1, pady=5)
 
     def check_entry_val(self, entry_list):
@@ -63,14 +65,14 @@ class open_commit_frame():
                 tkMessageBox.showinfo("ERROR INFO", "word or meaning can't be null...")
                 raise Exception("ERROR INFO : word or meaning can't be null...")
                 
-            # check the word entry input not contain digit and special symbol
-            pat = re.compile('^[A-Za-z\s]+$')
-            if len(pat.findall(key)) == 0:
-                tkMessageBox.showinfo("ERROR INFO", "Words can only contain letters or spaces")
-                raise Exception("ERROR INFO, Words can only contain letters or spaces")                
+        # check the word entry input not contain digit and special symbol
+        pat = re.compile('^[A-Za-z][A-Za-z\s]*$')
+        if len(pat.findall(entry_list[0])) == 0:
+            tkMessageBox.showinfo("ERROR INFO", "Words can only contain letters or spaces")
+            raise Exception("ERROR INFO, Words can only contain letters or spaces")        
             
                 
-    def commit(self):
+    def commit(self, event=None):
         # get the entry input
         self.word_val = self.entry_name[0].get().strip()
         self.mean_val = self.entry_name[1].get().encode('utf-8')
@@ -96,10 +98,13 @@ class open_commit_frame():
         self.nums_var.set("nums : " + str(self.word_nums))
 
         # clean the entry data
-        self.entry_var[1].set("")
-        self.entry_var[0].set("")
+        for key in self.entry_var:
+            key.set("")
+
+        self.entry_name[0].focus()    
         
-    def query(self):
+        
+    def query(self, event=None):
         pass
         
     def get_word_nums(self):
@@ -161,9 +166,10 @@ class MyApp():
             rowline += 1
 
         connect_bt = Button(self.frame, text="connect", command=self.connect, **self.bt_conf)
-        connect_bt.grid(row=rowline + 1, column=1, pady=5, sticky=W)
-
-    def connect(self):
+        connect_bt.bind('<Return>', self.connect)       # bind connect button on return key
+        connect_bt.grid(row=rowline + 1, column=0, pady=5, sticky=W)
+            
+    def connect(self, event=None):
         # get mysql config and try to connect
         self.mysql_dict_value = []
         for key in self.entry_name:
@@ -199,5 +205,7 @@ class MyApp():
 
 if __name__ == "__main__":
     root = Tk()
+    root.update_idletasks()
+
     app = MyApp(parent=root)
     root.mainloop()
