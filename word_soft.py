@@ -52,33 +52,36 @@ class open_commit_frame():
             
         # add commit button and query button
         commit_bt = Button(self.commit_frame, text="commit", command=self.commit, **self.bt_conf)
-        commit_bt.bind('<Return>', self.commit)
         commit_bt.grid(row=rowline + 1, column=0, pady=5)
         query_bt = Button(self.commit_frame, text="query", command=self.query, **self.bt_conf)
-        query_bt.bind('<Return>', self.query)
         query_bt.grid(row=rowline + 1, column=1, pady=5)
 
-    def check_entry_val(self, entry_list):
-        for key in entry_list:
+    def check_entry_val(self):
+        self.entry_dict = dict(zip(self.label_name, self.entry_name))
+        for (key,value) in  self.entry_dict.items():
             # check the entry value is not null
-            if len(key) == 0:
-                tkMessageBox.showinfo("ERROR INFO", "word or meaning can't be null...")
-                raise Exception("ERROR INFO : word or meaning can't be null...")
-                
+            if len(value.get()) == 0:
+                tkMessageBox.showinfo("ERROR INFO", "%s can't be null..." % key)
+                raise Exception("ERROR INFO :%s can't be null..." % key)
+            
+            # check the entry value isn't too long
+            if len(value.get()) > 50:
+                tkMessageBox.showinfo("ERROR INFO", "%s data too long..." % key)
+                raise Exception("ERROR INFO :%s data too long..." % key)            
+                                 
         # check the word entry input not contain digit and special symbol
         pat = re.compile('^[A-Za-z][A-Za-z\s]*$')
-        if len(pat.findall(entry_list[0])) == 0:
+        if len(pat.findall(self.entry_dict['word'])) == 0:
             tkMessageBox.showinfo("ERROR INFO", "Words can only contain letters or spaces")
-            raise Exception("ERROR INFO, Words can only contain letters or spaces")        
-            
-                
-    def commit(self, event=None):
+            raise Exception("ERROR INFO, Words can only contain letters or spaces") 
+   
+    def commit(self):
         # get the entry input
         self.word_val = self.entry_name[0].get().strip()
         self.mean_val = self.entry_name[1].get().encode('utf-8')
     
         # check input is not null
-        self.check_entry_val([self.word_val, self.mean_val])
+        self.check_entry_val()
  
         # check the word is existed??
         check_query = "select count(0) from word_db where word = '%s'" % self.word_val
@@ -104,7 +107,7 @@ class open_commit_frame():
         self.entry_name[0].focus()    
         
         
-    def query(self, event=None):
+    def query(self):
         pass
         
     def get_word_nums(self):
@@ -206,6 +209,8 @@ class MyApp():
 if __name__ == "__main__":
     root = Tk()
     root.update_idletasks()
-
+    # x = (root.winfo_screenwidth() - root.winfo_reqwidth()) / 2
+    # y = (root.winfo_screenheight() - root.winfo_reqheight()) / 2
+    # root.geometry("+%d+%d" % (x, y))
     app = MyApp(parent=root)
     root.mainloop()
