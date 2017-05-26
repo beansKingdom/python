@@ -1,3 +1,8 @@
+finish modules:
+	1,2
+	3.1
+	
+
 2017-5-26 11:16 commit
 	finish every button bind return key	--4.2.1
 	finish click commit bt, the cursor will auto in word entry --4.4.1
@@ -8,3 +13,6 @@
 		
 	in query function:
 		finish check the word entry value lenth (can't be null or can't too long)
+		
+2017-5-26 15:08 commit
+	finish 3.2

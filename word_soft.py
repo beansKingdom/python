@@ -49,31 +49,32 @@ class open_commit_frame():
             self.entry_name.append(entryname)
             self.entry_var.append(entryvar)
             rowline += 1
-            
+        
+        self.entry_dict = dict(zip(self.label_name, self.entry_name))
         # add commit button and query button
         commit_bt = Button(self.commit_frame, text="commit", command=self.commit, **self.bt_conf)
         commit_bt.grid(row=rowline + 1, column=0, pady=5)
         query_bt = Button(self.commit_frame, text="query", command=self.query, **self.bt_conf)
         query_bt.grid(row=rowline + 1, column=1, pady=5)
 
-    def check_entry_val(self):
-        self.entry_dict = dict(zip(self.label_name, self.entry_name))
-        for (key,value) in  self.entry_dict.items():
-            # check the entry value is not null
-            if len(value.get()) == 0:
-                tkMessageBox.showinfo("ERROR INFO", "%s can't be null..." % key)
-                raise Exception("ERROR INFO :%s can't be null..." % key)
+    def check_entry_val(self, type):       
+        value = self.entry_dict[type]
+        # check the entry value is not null
+        if len(value.get()) == 0:
+            tkMessageBox.showinfo("ERROR INFO", "%s can't be null..." % type)
+            raise Exception("ERROR INFO :%s can't be null..." % type)
             
-            # check the entry value isn't too long
-            if len(value.get()) > 50:
-                tkMessageBox.showinfo("ERROR INFO", "%s data too long..." % key)
-                raise Exception("ERROR INFO :%s data too long..." % key)            
+        # check the entry value isn't too long
+        if len(value.get()) > 50:
+            tkMessageBox.showinfo("ERROR INFO", "%s data too long..." % type)
+            raise Exception("ERROR INFO :%s data too long..." % type)            
                                  
         # check the word entry input not contain digit and special symbol
-        pat = re.compile('^[A-Za-z][A-Za-z\s]*$')
-        if len(pat.findall(self.entry_dict['word'])) == 0:
-            tkMessageBox.showinfo("ERROR INFO", "Words can only contain letters or spaces")
-            raise Exception("ERROR INFO, Words can only contain letters or spaces") 
+        if type == "word":
+            pat = re.compile('^[A-Za-z][A-Za-z\s]*$')
+            if len(pat.findall(value.get())) == 0:
+                tkMessageBox.showinfo("ERROR INFO", "Words can only contain letters or spaces")
+                raise Exception("ERROR INFO, Words can only contain letters or spaces") 
    
     def commit(self):
         # get the entry input
@@ -81,7 +82,8 @@ class open_commit_frame():
         self.mean_val = self.entry_name[1].get().encode('utf-8')
     
         # check input is not null
-        self.check_entry_val()
+        self.check_entry_val("word")
+        self.check_entry_val("meaning")
  
         # check the word is existed??
         check_query = "select count(0) from word_db where word = '%s'" % self.word_val
@@ -108,7 +110,24 @@ class open_commit_frame():
         
         
     def query(self):
-        pass
+        self.word_val = self.entry_name[0].get().strip()
+        self.check_entry_val('word')
+        
+        # check the word is existed....
+        check_query = "select count(0) from  word_db where word = '%s'" % self.word_val
+        self.cursor.execute(check_query)
+        self.conn.commit()
+        data = self.cursor.fetchone()  
+        if data[0] == 0:
+            tkMessageBox.showinfo("ERROR INFO", "This word not found...")
+            raise Exception("ERROR INFO, This word not found...")  
+            
+        sql_query = "select meaning from  word_db where word = '%s'" % self.word_val
+        self.cursor.execute(sql_query)
+        self.conn.commit()
+        data = self.cursor.fetchone()
+        
+        self.entry_var[1].set(data[0])
         
     def get_word_nums(self):
         self.cursor.execute("select count(0) from word_db")
