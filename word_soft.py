@@ -143,7 +143,7 @@ class open_query_frame():
         self.word_entry.grid(row=1, rowspan=1, column=1, columnspan=1, **self.grid_conf)
         
         # add meaning text
-        self.meaning_text = Text(self.query_frame, width=23, height=3)
+        self.meaning_text = Text(self.query_frame, width=23, height=3, state='disabled')
         self.meaning_text.grid(row=2, column=1, **self.grid_conf)
         
         self.entry_dict = dict(zip(self.label_name, [self.word_entry, self.meaning_text]))
@@ -190,7 +190,9 @@ class open_query_frame():
         self.conn.commit()
         data = self.cursor.fetchone()
         
+        self.meaning_text['state'] = 'normal'
         self.meaning_text.insert(INSERT, data[0])
+        self.meaning_text['state'] = 'disabled'
                
 class open_review_frame():
     def __init__(self, original, label_conf, conn, button_conf, grid_conf):
@@ -215,9 +217,7 @@ class open_review_frame():
         self.nums_entry.grid(row=self.rowline, rowspan=1, column=1, columnspan=1, **self.grid_conf)
         
         # the review types : english - chinese or chinese - english or mix
-        #self.review_type_val = StringVar()  
         self.review_type = ttk.Combobox(self.review_frame, width=15, text = "", state='readonly')
-        #self.review_type = ttk.Combobox(self.review_frame, width=12, textvariable=self.review_type_val, state='readonly')
         self.review_type['values'] = ("review_type", "english-chinese", "chinese-english", "mix")
         self.review_type.current(0) 
         self.review_type.grid(row=self.rowline, column=2, **self.grid_conf)
@@ -228,6 +228,51 @@ class open_review_frame():
 
     # display review control
     def start(self):
+        self.review_type_val = self.review_type['values'].index(self.review_type.get())
+        
+        # get words from database
+        self.cursor.execute("select id, word, meaning from (select * from word_db order by ins_time) as temp where word_type != 1 limit 50;")
+        self.word_res = list(self.cursor.fetchall())     # the result of slef.cursor.fetchall is tuple, now change it to list 
+        self.length = len(self.word_res)
+        
+        # generate random list by words' id
+        self.id_list = []
+        for key in self.word_res:
+            self.id_list.append(key[0])
+            
+        # check how many nums of word need to review 
+        if len(self.id_list) == 0:
+            tkMessageBox.showinfo("ERROR INFO", "No words need to review")
+            raise Exception("ERROR INFO : No words need to review")            
+        
+        # get the index from rand_list, because the rand_list's element just is word's id, but we need the id's index in id_list(word_res)
+        self.rand_list = random.sample(self.id_list, self.length)
+        self.index_list = []
+        self.index_list.append(self.id_list.index(self.rand_list[0]))
+        self.back_index_list = []   
+        
+        self.en_ch_review()
+        pass
+        
+    def en_ch_review(self):
+        # add review word and meaning label
+        self.en_re_word = Label(self.review_frame, text="word : ", **self.lb_conf)
+        self.re_word.grid(row=self.rowline+1, **self.grid_conf)
+        
+        self.re_meaning = Label(self.review_frame, text="meaning : ", **self.lb_conf)
+        self.re_meaning.grid(row=self.rowline+2, **self.grid_conf)
+        
+        # add word entry
+        self.word_entry_val = StringVar()
+        self.word_entry = Entry(self.review_frame, textvariable=self.word_entry_val, font=15, state='readonly')
+        self.word_entry.grid(row=self.rowline+1, column=1, **self.grid_conf)                                 
+        self.word_entry_val.set(self.en_word_res[self.en_index_list[0]][1])
+        
+        # add meaning text
+        self.meaning_text
+        
+                    
+    def ch_en_review(self):
         pass
  
 class MyApp():
