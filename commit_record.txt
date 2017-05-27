@@ -17,8 +17,10 @@ finish modules:
 2017-5-26 15:08 commit
 	finish 3.2
 
-2017-5-27 15:38 commit
+2017-5-27 17:38 commit
 	remodeling finish:
+		insert and query function
 		frame display in the center
 		split insert and query
+		change the query meaning entry: put a replace text with entry 
 		

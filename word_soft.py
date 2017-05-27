@@ -128,33 +128,30 @@ class open_query_frame():
 
         # label and entry control
         self.label_name = ["word", "meaning"]
-        self.entry_name = []
-        self.entry_var = []
         rowline = 1
         
         # add mysql connect control
         for key in self.label_name:
             lbname = key + "Lable"
-            entryname = key + "Entry"
-            entryvar = key + "Var"
-
             lbname = Label(self.query_frame, text=key + " :", **self.lb_conf)
             lbname.grid(row=rowline, column=0, columnspan=1, **self.grid_conf)
-
-            entryvar = StringVar()
-            entryname = Entry(self.query_frame, textvariable=entryvar, font=15)
-            entryname.grid(row=rowline, rowspan=1, column=1, columnspan=1, **self.grid_conf)
-            self.entry_name.append(entryname)
-            self.entry_var.append(entryvar)
             rowline += 1
+
+        # add word entry
+        self.word_entry_val = StringVar()
+        self.word_entry = Entry(self.query_frame, textvariable=self.word_entry_val, font=15)
+        self.word_entry.grid(row=1, rowspan=1, column=1, columnspan=1, **self.grid_conf)
         
-        self.entry_name[1]['state'] = 'readonly'
-        self.entry_dict = dict(zip(self.label_name, self.entry_name))
+        # add meaning text
+        self.meaning_text = Text(self.query_frame, width=23, height=3)
+        self.meaning_text.grid(row=2, column=1, **self.grid_conf)
+        
+        self.entry_dict = dict(zip(self.label_name, [self.word_entry, self.meaning_text]))
         
         # query button
         query_bt = Button(self.query_frame, text="query", command=self.query, **self.bt_conf)
         query_bt.bind('<Return>', self.query)
-        query_bt.grid(row=rowline + 1, **self.grid_conf)
+        query_bt.grid(row=rowline + 2, column=1, **self.grid_conf)
 
     def check_entry_val(self):       
         value = self.entry_dict['word']
@@ -175,7 +172,8 @@ class open_query_frame():
             raise Exception("ERROR INFO, Words can only contain letters or spaces") 
    
     def query(self, event=None):
-        self.word_val = self.entry_name[0].get().strip()
+        self.meaning_text.delete('1.0', END)
+        self.word_val = self.word_entry.get().strip()
         self.check_entry_val()
         
         # check the word is existed....
@@ -192,7 +190,7 @@ class open_query_frame():
         self.conn.commit()
         data = self.cursor.fetchone()
         
-        self.entry_var[1].set(data[0])
+        self.meaning_text.insert(INSERT, data[0])
                
 class open_review_frame():
     def __init__(self, original, label_conf, conn, button_conf, grid_conf):
@@ -324,7 +322,7 @@ class MyApp():
         # add new frame,is used insert and review
         insert_frame = open_insert_frame(original=self.root, label_conf=self.lb_conf, conn=self.conn, button_conf=self.bt_conf, grid_conf=self.grid_conf)
         review_frame = open_review_frame(original=self.root, label_conf=self.lb_conf, conn=self.conn, button_conf=self.bt_conf, grid_conf=self.grid_conf)
-        #query_frame = open_query_frame(original=self.root, label_conf=self.lb_conf, conn=self.conn, button_conf=self.bt_conf, grid_conf=self.grid_conf)
+        query_frame = open_query_frame(original=self.root, label_conf=self.lb_conf, conn=self.conn, button_conf=self.bt_conf, grid_conf=self.grid_conf)
 
     def show(self):
         """"""
