@@ -205,7 +205,7 @@ class open_review_frame():
         self.cursor = self.conn.cursor()
                 
         self.review_frame = LabelFrame(original, text="review", bd=1, height=400, width=500)
-        self.review_frame.grid(row=0, column=1, sticky=W + N, ipadx=10, ipady=10)
+        self.review_frame.grid(row=0, column=1, rowspan=2,sticky=E+N, ipadx=10, ipady=10)
         self.rowline = 0
         
         # the numbers of vocabulary you want to review , default 50
@@ -257,24 +257,50 @@ class open_review_frame():
     def en_ch_review(self):
         # add review word and meaning label
         self.en_re_word = Label(self.review_frame, text="word : ", **self.lb_conf)
-        self.re_word.grid(row=self.rowline+1, **self.grid_conf)
+        self.en_re_word.grid(row=self.rowline+1, **self.grid_conf)
         
-        self.re_meaning = Label(self.review_frame, text="meaning : ", **self.lb_conf)
-        self.re_meaning.grid(row=self.rowline+2, **self.grid_conf)
+        self.en_re_meaning = Label(self.review_frame, text="meaning : ", **self.lb_conf)
+        self.en_re_meaning.grid(row=self.rowline+2, **self.grid_conf)
         
         # add word entry
-        self.word_entry_val = StringVar()
-        self.word_entry = Entry(self.review_frame, textvariable=self.word_entry_val, font=15, state='readonly')
-        self.word_entry.grid(row=self.rowline+1, column=1, **self.grid_conf)                                 
-        self.word_entry_val.set(self.en_word_res[self.en_index_list[0]][1])
+        self.en_word_entry_val = StringVar()
+        self.en_word_entry = Entry(self.review_frame, textvariable=self.en_word_entry_val, font=15, state='readonly')
+        self.en_word_entry.grid(row=self.rowline+1, column=1, **self.grid_conf)                                 
+        self.en_word_entry_val.set(self.word_res[self.index_list[0]][1])
         
         # add meaning text
-        self.meaning_text
+        self.en_meaning_text = Text(self.review_frame, width=23, height=3, state='disabled')
+        self.en_meaning_text.grid(row=self.rowline+2, column=1, **self.grid_conf)
+        
+        # add review buttons
+        self.en_last_bt = Button(self.review_frame, text="last", command=self.last, **self.bt_conf)
+        self.en_last_bt.grid(row=self.rowline+4, column=1, **self.grid_conf)
+    
+        self.en_next_bt = Button(self.review_frame, text="next", command=self.next, state='disabled', **self.bt_conf)
+        self.en_next_bt.grid(row=self.rowline+4, column=2, **self.grid_conf)
+                 
+        self.en_remember_bt = Button(self.review_frame, text="remember", command=self.remember, **self.bt_conf)
+        self.en_remember_bt.grid(row=self.rowline+3, column=1, **self.grid_conf)
+       
+        self.en_oblivious_bt = Button(self.review_frame, text="oblivious", command=self.oblivious, **self.bt_conf)
+        self.en_oblivious_bt.grid(row=self.rowline+3, column=2, **self.grid_conf)            
         
                     
     def ch_en_review(self):
         pass
  
+    def last(self):
+        pass
+        
+    def next(self):
+        pass
+        
+    def remember(self):
+        pass
+        
+    def oblivious(self):
+        pass
+    
 class MyApp():
     def __init__(self, parent=None):
         self.root = parent
