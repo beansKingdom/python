@@ -16,3 +16,9 @@ finish modules:
 		
 2017-5-26 15:08 commit
 	finish 3.2
+
+2017-5-27 15:38 commit
+	remodeling finish:
+		frame display in the center
+		split insert and query
+		
