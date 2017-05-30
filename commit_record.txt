@@ -23,4 +23,10 @@ finish modules:
 		frame display in the center
 		split insert and query
 		change the query meaning entry: put a replace text with entry 
+        
+2017-5-30 12:00 commit
+    finish 
+        add menu bar:
+            import and export function, help and quit
+            
 		

@@ -7,6 +7,7 @@ import time
 import random
 import re
 import ttk
+import os
 
 class open_insert_frame():
     def __init__(self, original, label_conf, conn, button_conf, grid_conf):
@@ -22,7 +23,6 @@ class open_insert_frame():
         self.insert_frame.grid(row=0, column=0, sticky=W + N, ipadx=10, ipady=10)
 
         # word label: show the numbers of word
-        # word_nums = get_word_nums(db) get the numbers of word from database
         self.word_nums = self.get_word_nums()
         self.nums_var = StringVar()
         self.nums_label = Label(self.insert_frame, textvariable=self.nums_var, **self.lb_conf)
@@ -55,6 +55,7 @@ class open_insert_frame():
         
         # add insert button and query button
         insert_bt = Button(self.insert_frame, text="insert", command=self.insert, **self.bt_conf)
+        insert_bt.bind('<Return>', self.insert)
         insert_bt.grid(row=rowline + 1, column=1, **self.grid_conf)
 
     def check_entry_val(self, type):       
@@ -191,6 +192,7 @@ class open_query_frame():
         data = self.cursor.fetchone()
         
         self.meaning_text['state'] = 'normal'
+        self.meaning_text.delete('1.0', END)
         self.meaning_text.insert(INSERT, data[0])
         self.meaning_text['state'] = 'disabled'
                
@@ -228,32 +230,75 @@ class open_review_frame():
 
     # display review control
     def start(self):
-        self.review_type_val = self.review_type['values'].index(self.review_type.get())
+        # get the listbox index
+        #self.review_type_val = self.review_type['values'].index(self.review_type.get())
         
-        # get words from database
-        self.cursor.execute("select id, word, meaning from (select * from word_db order by ins_time) as temp where word_type != 1 limit 50;")
+        # get words from database  
+        # self.nums_entry.get() : get the max nums of review words 
+        self.cursor.execute("select id, word, meaning from (select * from word_db order by ins_time) \
+                            as temp where word_type != 1 or (ins_time - CURDATE() + 0)>=3 limit " + self.nums_entry.get())
         self.word_res = list(self.cursor.fetchall())     # the result of slef.cursor.fetchall is tuple, now change it to list 
         self.length = len(self.word_res)
         
-        # generate random list by words' id
+        # generate list by words' id
         self.id_list = []
         for key in self.word_res:
             self.id_list.append(key[0])
             
-        # check how many nums of word need to review 
+        # check how many nums of words need to review 
         if len(self.id_list) == 0:
             tkMessageBox.showinfo("ERROR INFO", "No words need to review")
             raise Exception("ERROR INFO : No words need to review")            
-        
-        # get the index from rand_list, because the rand_list's element just is word's id, but we need the id's index in id_list(word_res)
-        self.rand_list = random.sample(self.id_list, self.length)
+                
+        self.rand_list = random.sample(self.id_list, self.length)      #generate random review id_list
+        # get the index from rand_list, because the rand_list's element just is word's id, 
+        # but we need the id's index in id_list(word_res) 
         self.index_list = []
-        self.index_list.append(self.id_list.index(self.rand_list[0]))
-        self.back_index_list = []   
+        for key in self.rand_list:
+            self.index_list.append(self.id_list.index(key))
         
+        self.back_index_list = []
+        self.obl_list = []        
         self.en_ch_review()
+        
+        # add review buttons
+        self.last_bt = Button(self.review_frame, text="last", command=self.last, **self.bt_conf)
+        self.last_bt.grid(row=self.rowline+4, column=1, **self.grid_conf)
+    
+        self.next_bt = Button(self.review_frame, text="next", command=self.next, state='disabled', **self.bt_conf)
+        self.next_bt.grid(row=self.rowline+4, column=2, **self.grid_conf)
+                 
+        self.remember_bt = Button(self.review_frame, text="remember", command=self.remember, **self.bt_conf)
+        self.remember_bt.grid(row=self.rowline+3, column=1, **self.grid_conf)
+       
+        self.oblivious_bt = Button(self.review_frame, text="oblivious", command=self.oblivious, **self.bt_conf)
+        self.oblivious_bt.grid(row=self.rowline+3, column=2, **self.grid_conf)          
         pass
         
+    def next(self):
+        self.back_index_list.append(self.index_list[0])
+        self.rand_list.pop(0)
+        self.index_list.pop(0)
+        
+        print (" rand_list %s\n index_list %s\n obl_list %s\n" % (self.rand_list, self.index_list, self.obl_list))
+        self.cursor.execute(self.sql_query)
+        self.conn.commit()            
+        # make sure all oblivious words reviewed
+        if len(self.rand_list) == 0:
+            if len(self.obl_list) == 0:
+                tkMessageBox.showinfo("ERROR INFO", "No words need to review")
+                raise Exception("ERROR INFO : No words need to review") 
+            else:
+                self.rand_list = random.sample(self.obl_list, len(self.obl_list))
+                for key in self.rand_list:
+                    self.index_list.append(self.obl_list.index(key))
+                    
+        self.en_word_entry_val.set(self.word_res[self.index_list[0]][1])
+        self.en_meaning_text['state'] = 'normal'
+        self.en_meaning_text.delete('1.0', END)
+        self.en_meaning_text['state'] = 'disabled'
+        self.next_bt['state'] = 'disabled'
+               
     def en_ch_review(self):
         # add review word and meaning label
         self.en_re_word = Label(self.review_frame, text="word : ", **self.lb_conf)
@@ -271,36 +316,34 @@ class open_review_frame():
         # add meaning text
         self.en_meaning_text = Text(self.review_frame, width=23, height=3, state='disabled')
         self.en_meaning_text.grid(row=self.rowline+2, column=1, **self.grid_conf)
-        
-        # add review buttons
-        self.en_last_bt = Button(self.review_frame, text="last", command=self.last, **self.bt_conf)
-        self.en_last_bt.grid(row=self.rowline+4, column=1, **self.grid_conf)
-    
-        self.en_next_bt = Button(self.review_frame, text="next", command=self.next, state='disabled', **self.bt_conf)
-        self.en_next_bt.grid(row=self.rowline+4, column=2, **self.grid_conf)
-                 
-        self.en_remember_bt = Button(self.review_frame, text="remember", command=self.remember, **self.bt_conf)
-        self.en_remember_bt.grid(row=self.rowline+3, column=1, **self.grid_conf)
-       
-        self.en_oblivious_bt = Button(self.review_frame, text="oblivious", command=self.oblivious, **self.bt_conf)
-        self.en_oblivious_bt.grid(row=self.rowline+3, column=2, **self.grid_conf)            
-        
-                    
+                                      
     def ch_en_review(self):
         pass
  
     def last(self):
         pass
-        
-    def next(self):
-        pass
-        
+             
     def remember(self):
-        pass
-        
+        # id : the id of query   
+        self.id = self.rand_list[0]  
+        print ("remember" +  str(self.id))
+        self.sql_query = "update word_db set word_type = 1,review_count = review_count+1 where id = " + str(self.id)
+        self.rem_obl_common()
+ 
     def oblivious(self):
-        pass
-    
+        self.id = self.rand_list[0]   
+        print ("oblivious" +  str(self.id))        
+        self.sql_query = "update word_db set word_type = 0,review_count = review_count+1 where id = " + str(self.id)
+        self.rem_obl_common()
+        self.obl_list.append(self.id)
+        
+    def rem_obl_common(self):      
+        self.en_meaning_text['state'] = 'normal'
+        self.en_meaning_text.delete('1.0', END)
+        self.en_meaning_text.insert(INSERT, self.word_res[self.id_list.index(self.id)][2])
+        self.en_meaning_text['state'] = 'disabled'
+        self.next_bt['state'] = 'normal'   
+        
 class MyApp():
     def __init__(self, parent=None):
         self.root = parent
@@ -335,7 +378,7 @@ class MyApp():
         }
 
         self.label_name = ["mysql_ip", "username", "password", "port", "dbname"]
-        self.text_value = ["127.0.0.1", "action", "action", 3306, "word_soft"]
+        self.text_value = ["10.186.24.45", "action", "action", 3306, "word_soft"]
         self.entry_name = []
         rowline = 0
 
@@ -394,12 +437,57 @@ class MyApp():
         insert_frame = open_insert_frame(original=self.root, label_conf=self.lb_conf, conn=self.conn, button_conf=self.bt_conf, grid_conf=self.grid_conf)
         review_frame = open_review_frame(original=self.root, label_conf=self.lb_conf, conn=self.conn, button_conf=self.bt_conf, grid_conf=self.grid_conf)
         query_frame = open_query_frame(original=self.root, label_conf=self.lb_conf, conn=self.conn, button_conf=self.bt_conf, grid_conf=self.grid_conf)
+        menu_bar = show_menubar(original=self.root, mysql_info = self.mysql_dict, conn=self.conn)
 
     def show(self):
         """"""
         self.root.update()
         self.root.deiconify()
 
+class show_menubar():
+    def __init__(self, conn, original=None, mysql_info=None):
+        self.root = original
+        self.mysql_dict = mysql_info
+        self.conn = conn
+        self.cursor = self.conn.cursor()
+        
+        # get the script's directory 
+        self.script_dir = os.path.split(os.path.realpath(__file__))[0]
+        self.directory = self.script_dir + "\data.txt"
+        
+        # create menu bar function
+        menubar = Menu(self.root)
+        self.root.config(menu=menubar)
+        
+        # create a menu item which called operation, and add functions
+        oper_menu = Menu(menubar)
+        menubar.add_cascade(label="operation", menu=oper_menu)
+        oper_menu.add_command(label="import words", command=self.import_data)
+        oper_menu.add_command(label="export words", command=self.export_data)        
+        oper_menu.add_command(label="exit", command=self.quit)
+        
+        # create a menu item which called help, and add functions
+        help_menu = Menu(menubar)
+        menubar.add_cascade(label="Help", menu=help_menu)
+        help_menu.add_command(label="about")
+        
+    def quit(self):
+        self.root.quit()
+        self.root.destroy()
+        exit()
+        
+    def import_data(self):
+        print self.directory
+        #os.system("mysql -u%s -p%s -h%s -P%s %s < %s" % (self.mysql_dict['username'], self.mysql_dict['password'], \
+        #self.mysql_dict['mysql_ip'], self.mysql_dict['port'], self.mysql_dict['dbname'], self.directory))
+        os.system("mysql -u%s -p%s -h127.0.0.1 -P%s %s < %s" % (self.mysql_dict['username'], self.mysql_dict['password'], \
+        self.mysql_dict['port'], self.mysql_dict['dbname'], self.directory)) 
+        
+    def export_data(self):
+        os.system("mysqldump -u%s -p%s -h%s -P%s %s word_db --lock-all-tables > %s" % \
+        (self.mysql_dict['username'], self.mysql_dict['password'], self.mysql_dict['mysql_ip'], self.mysql_dict['port'],\
+        self.mysql_dict['dbname'], self.directory))       
+              
 # def get_screen_size(window): 
     # return window.winfo_screenwidth(),window.winfo_screenheight() 
 
@@ -408,7 +496,6 @@ class MyApp():
       
 if __name__ == "__main__":
     root = Tk()
-
 
     app = MyApp(parent=root)
     root.mainloop()
