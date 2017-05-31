@@ -21,14 +21,12 @@ class open_insert_frame():
         # add labelframe contrl
         self.insert_frame = LabelFrame(original, text="insert",bd=1)
         self.insert_frame.grid(row=0, column=0, sticky=W + N, ipadx=10, ipady=10)
-
+        
         # word label: show the numbers of word
-        self.word_nums = self.get_word_nums()
         self.nums_var = StringVar()
         self.nums_label = Label(self.insert_frame, textvariable=self.nums_var, **self.lb_conf)
-        self.nums_var.set("nums : " + str(self.word_nums))
         self.nums_label.grid(row=0, column=0, **self.grid_conf)
-
+        
         # label and entry control
         self.label_name = ["word", "meaning"]
         self.entry_name = []
@@ -77,7 +75,9 @@ class open_insert_frame():
                 tkMessageBox.showinfo("ERROR INFO", "Words can only contain letters or spaces")
                 raise Exception("ERROR INFO, Words can only contain letters or spaces") 
    
-    def insert(self, event=None):
+    def insert(self, event=None): 
+        self.word_nums = self.get_word_nums() + 1    
+        
         # get the entry input
         self.word_val = self.entry_name[0].get().strip()
         self.mean_val = self.entry_name[1].get().encode('utf-8')
@@ -95,22 +95,24 @@ class open_insert_frame():
             raise Exception("ERROR INFO, This word is existed...")
 
         sql_query = "insert into word_db (id, word, meaning, ins_time) values \
-                    (%d, '%s', '%s', CURDATE() + 0)" % (self.word_nums+1, self.word_val, self.mean_val)
+                    (%d, '%s', '%s', CURDATE() + 0)" % (self.word_nums, self.word_val, self.mean_val)
         self.cursor.execute(sql_query)
         self.conn.commit()
-
-        # get total words num
-        self.word_nums += 1
-        self.nums_var.set("nums : " + str(self.word_nums))
-
+       
         # clean the entry data
         for key in self.entry_var:
             key.set("")
 
-        self.entry_name[0].focus()    
+        self.entry_name[0].focus() 
+               
+        self.nums_var.set("nums : " + str(self.word_nums))        
                 
     def get_word_nums(self):
-        self.cursor.execute("select count(0) from word_db")
+        try:
+            self.cursor.execute("select count(0) from word_db")
+        except pymysql.Error as err:
+            tkMessageBox.showinfo("ERROR INFO", "Mysql Error %d: %s" % (err.args[0], err.args[1]))
+            raise Exception("ERROR INFO : Mysql Error %d: %s" % (err.args[0], err.args[1]))       
         data = self.cursor.fetchone()
         return data[0]
 
@@ -258,7 +260,8 @@ class open_review_frame():
             self.index_list.append(self.id_list.index(key))
         
         self.back_index_list = []
-        self.obl_list = []        
+        self.obl_list = []
+        self.is_oblivious = 0        
         self.en_ch_review()
         
         # add review buttons
@@ -279,26 +282,28 @@ class open_review_frame():
         self.back_index_list.append(self.index_list[0])
         self.rand_list.pop(0)
         self.index_list.pop(0)
-        
-        print (" rand_list %s\n index_list %s\n obl_list %s\n" % (self.rand_list, self.index_list, self.obl_list))
+        self.is_oblivious = 0        
         self.cursor.execute(self.sql_query)
-        self.conn.commit()            
+        self.conn.commit()  
+        
         # make sure all oblivious words reviewed
         if len(self.rand_list) == 0:
             if len(self.obl_list) == 0:
+                self.next_bt['state'] = 'disabled'
                 tkMessageBox.showinfo("ERROR INFO", "No words need to review")
                 raise Exception("ERROR INFO : No words need to review") 
             else:
                 self.rand_list = random.sample(self.obl_list, len(self.obl_list))
                 for key in self.rand_list:
-                    self.index_list.append(self.obl_list.index(key))
-                    
+                    self.index_list.append(self.id_list.index(key))
+                self.obl_list = []
+                
         self.en_word_entry_val.set(self.word_res[self.index_list[0]][1])
         self.en_meaning_text['state'] = 'normal'
         self.en_meaning_text.delete('1.0', END)
         self.en_meaning_text['state'] = 'disabled'
         self.next_bt['state'] = 'disabled'
-               
+                                          
     def en_ch_review(self):
         # add review word and meaning label
         self.en_re_word = Label(self.review_frame, text="word : ", **self.lb_conf)
@@ -321,19 +326,29 @@ class open_review_frame():
         pass
  
     def last(self):
-        pass
-             
+        if len(self.back_index_list) == 0:
+            tkMessageBox.showinfo("ERROR INFO", "This is the first word")
+            raise Exception("ERROR INFO : This is the first word")
+        
+        id = 0
+        
+    
     def remember(self):
-        # id : the id of query   
+        # if clicked oblivious button before clicked remember button, we should delete the obl_list's last element    
+        if self.is_oblivious == 1:
+            self.obl_list.pop()
+            self.is_oblivious = 0
+            
+        # id : the id of query
         self.id = self.rand_list[0]  
-        print ("remember" +  str(self.id))
         self.sql_query = "update word_db set word_type = 1,review_count = review_count+1 where id = " + str(self.id)
         self.rem_obl_common()
+        
  
     def oblivious(self):
-        self.id = self.rand_list[0]   
-        print ("oblivious" +  str(self.id))        
-        self.sql_query = "update word_db set word_type = 0,review_count = review_count+1 where id = " + str(self.id)
+        self.is_oblivious = 1
+        self.id = self.rand_list[0]          
+        self.sql_query = "update word_db set word_type = 0 where id = " + str(self.id)
         self.rem_obl_common()
         self.obl_list.append(self.id)
         
@@ -352,7 +367,16 @@ class MyApp():
         self.center_window(900, 400)
         self.frame = LabelFrame(parent, text="main_frame", bd=1, height=400, width=500)
         self.frame.grid(row=0, column=0, sticky=E, ipadx=10, ipady=2, padx=10, pady=5)
-
+        
+        # create a menu 
+        self.menu_c = Menu(self.root)
+        self.root.config(menu=self.menu_c)
+        
+        # create help menu item
+        help_menu = Menu(self.menu_c)
+        self.menu_c.add_cascade(label="help", menu=help_menu)
+        help_menu.add_command(label="help_info", command=self.help)
+               
         # self.lb_conf: the label common config
         self.lb_conf = {
             "width": 10,
@@ -378,7 +402,7 @@ class MyApp():
         }
 
         self.label_name = ["mysql_ip", "username", "password", "port", "dbname"]
-        self.text_value = ["10.186.24.45", "action", "action", 3306, "word_soft"]
+        self.text_value = ["127.0.0.1", "action", "action", 3306, "word_soft"]
         self.entry_name = []
         rowline = 0
 
@@ -432,6 +456,7 @@ class MyApp():
 
         # hide the connect frame
         self.frame.grid_remove()
+        self.menu_c.grid_remove()
 
         # add new frame,is used insert and review
         insert_frame = open_insert_frame(original=self.root, label_conf=self.lb_conf, conn=self.conn, button_conf=self.bt_conf, grid_conf=self.grid_conf)
@@ -439,10 +464,25 @@ class MyApp():
         query_frame = open_query_frame(original=self.root, label_conf=self.lb_conf, conn=self.conn, button_conf=self.bt_conf, grid_conf=self.grid_conf)
         menu_bar = show_menubar(original=self.root, mysql_info = self.mysql_dict, conn=self.conn)
 
-    def show(self):
-        """"""
-        self.root.update()
-        self.root.deiconify()
+    def help(self):
+        window = Toplevel(self.root)
+        window.geometry('800x300')
+        
+        warn_var = StringVar()
+        warn_var.set("First, you should insure your compute installed mysql !!!")
+        warn_label = Label(window, textvariable=warn_var, width=100, anchor=W, justify=LEFT, font=18)        
+        warn_label.grid(row=0, **self.grid_conf)
+        
+        help_text = Text(window, )
+        help_text = Text(window, width=100, height=6)
+        help_text.grid(row=1,  **self.grid_conf) 
+        text = "mysql_ip: your computer ip addr, default 127.0.0.1\n\
+username: your mysql username\n\
+password: your mysql password\n\
+port    : your mysql port\n\
+dbname  : your words which database you want to store, you should create database first"
+        help_text.insert(INSERT, text)
+      
 
 class show_menubar():
     def __init__(self, conn, original=None, mysql_info=None):
@@ -477,11 +517,9 @@ class show_menubar():
         exit()
         
     def import_data(self):
-        print self.directory
-        #os.system("mysql -u%s -p%s -h%s -P%s %s < %s" % (self.mysql_dict['username'], self.mysql_dict['password'], \
-        #self.mysql_dict['mysql_ip'], self.mysql_dict['port'], self.mysql_dict['dbname'], self.directory))
-        os.system("mysql -u%s -p%s -h127.0.0.1 -P%s %s < %s" % (self.mysql_dict['username'], self.mysql_dict['password'], \
-        self.mysql_dict['port'], self.mysql_dict['dbname'], self.directory)) 
+        os.system("mysql -u%s -p%s -h%s -P%s %s < %s" % (self.mysql_dict['username'], self.mysql_dict['password'], \
+        self.mysql_dict['mysql_ip'], self.mysql_dict['port'], self.mysql_dict['dbname'], self.directory))
+
         
     def export_data(self):
         os.system("mysqldump -u%s -p%s -h%s -P%s %s word_db --lock-all-tables > %s" % \

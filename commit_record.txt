@@ -29,4 +29,6 @@ finish modules:
         add menu bar:
             import and export function, help and quit
             
+2017-5-30 16:11 commit
+    finish add connect interface' help info menu bar
 		
