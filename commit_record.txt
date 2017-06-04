@@ -37,3 +37,6 @@ last commit :
     
 last commit:
     push the gui cook test
+    
+last commit :
+    push a word_soft dir
