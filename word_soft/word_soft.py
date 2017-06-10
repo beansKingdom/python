@@ -4,12 +4,13 @@ from Tkinter import *
 import insert_widgets as ins
 import query_widgets as qry
 import review_widgets as rev
+import menu_bar
 
 class MainFrame:
     def __init__(self, parent=None):
         self.root = parent
         self.gui_width = 400
-        self.gui_height = 380
+        self.gui_height = 403
 
         self.root.title(" word_soft ")
         self.root.resizable(0, 0)                                           # disable resizing the gui
@@ -45,6 +46,8 @@ class MainFrame:
         rev.display_widgets(self.child_rev_frame)
         for child in self.child_rev_frame.winfo_children():                 # Change the padding which widgets in the label frame
             child.grid_configure(padx=8, pady=5)
+
+        menu_bar.display_menubar(self.root)
 
 
     def center_window(self, width, height):

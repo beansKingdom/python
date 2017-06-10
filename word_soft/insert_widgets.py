@@ -26,6 +26,7 @@ class InsFrame:
         self.wd_entry = Entry(self.root, textvariable=self.word_var, bd=1)
         self.mean_entry = Entry(self.root, textvariable=self.meaning_var, bd=1)
         self.wd_entry.grid(row=0, column=1, sticky=W)
+        self.mean_entry.bind('<Return>', self.insert)
         self.mean_entry.grid(row=1, column=1, sticky=W)
 
         # add button widget, and bind return key
@@ -43,7 +44,7 @@ class InsFrame:
             self.conn = pymysql.connect(self.mysql_dict['my_host'], self.mysql_dict['my_user'], self.mysql_dict['my_passwd'],
                                         self.mysql_dict['my_dbname'],int(self.mysql_dict['my_port']), charset='utf8')
         except pymysql.Error as err:
-            tkMessageBox.showinfo("ERROR INFO", "Mysql Error %d: %s" % (err.args[0], err.args[1]))
+            tkMessageBox.showerror("ERROR INFO", "Mysql Error %d: %s" % (err.args[0], err.args[1]))
             raise Exception("ERROR INFO : Mysql Error %d: %s" % (err.args[0], err.args[1]))
         self.cursor = self.conn.cursor()
 
@@ -54,20 +55,20 @@ class InsFrame:
             # check the word entry input not contain digit and special symbol
             pat = re.compile('^[A-Za-z][A-Za-z\s]*$')
             if len(value) !=0 and len(pat.findall(value)) == 0:
-                tkMessageBox.showinfo("ERROR INFO", "Words can only contain letters or spaces")
+                tkMessageBox.showerror("ERROR INFO", "Words can only contain letters or spaces")
                 raise Exception("ERROR INFO, Words can only contain letters or spaces")
         else:
             value = self.mean_val
 
         # check the entry value is not null
         if len(value) == 0:
-            tkMessageBox.showinfo("ERROR INFO", "%s can't be null..." % type)
+            tkMessageBox.showerror("ERROR INFO", "%s can't be null..." % type)
             raise Exception("ERROR INFO :%s can't be null..." % type)
 
         # check the entry value isn't too long
-        if len(value) > 50:
-            tkMessageBox.showinfo("ERROR INFO", "Max length is 50,%s data is too long..." % type)
-            raise Exception("ERROR INFO, Max length is 50,%s data is too long..." % type)
+        if len(value) > 100:
+            tkMessageBox.showerror("ERROR INFO", "Max length is 50,%s data is too long..." % type)
+            raise Exception("ERROR INFO, Max length is 100,%s data is too long..." % type)
 
     def insert(self, event=None):
         if self.is_conn == 0:
@@ -90,11 +91,11 @@ class InsFrame:
         self.cursor.execute(check_query)
         data = self.cursor.fetchone()
         if data[0] != 0:
-            tkMessageBox.showinfo("ERROR INFO", "This word is existed...")
+            tkMessageBox.showerror("ERROR INFO", "This word is existed...")
             raise Exception("ERROR INFO, This word is existed...")
 
-        sql_query = "insert into word_db (id, word, meaning, ins_time) values \
-                    (%d, '%s', '%s', CURDATE() + 0)" % (self.word_nums, self.word_val, self.mean_val)
+        sql_query = "insert into word_db (id, word, meaning, ins_time, review_time) values \
+                    (%d, '%s', '%s', CURDATE() + 0, CURDATE() + 0)" % (self.word_nums, self.word_val, self.mean_val)
         self.cursor.execute(sql_query)
         self.conn.commit()
 
@@ -114,7 +115,7 @@ class InsFrame:
         try:
             self.cursor.execute("select count(0) from word_db")
         except pymysql.Error as err:
-            tkMessageBox.showinfo("ERROR INFO", "Mysql Error %d: %s" % (err.args[0], err.args[1]))
+            tkMessageBox.showerror("ERROR INFO", "Mysql Error %d: %s" % (err.args[0], err.args[1]))
             raise Exception("ERROR INFO : Mysql Error %d: %s" % (err.args[0], err.args[1]))
         data = self.cursor.fetchone()
         return data[0]
