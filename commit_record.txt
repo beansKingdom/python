@@ -43,3 +43,8 @@ last commit :
     
 last commit 
     finish word_soft 
+    
+last commit 
+    advance word_soft:
+    add word_list search
+ 
