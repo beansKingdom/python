@@ -93,7 +93,7 @@ class MainFrame:
         for (column_name, column_text) in zip(tree_view_columnname, tree_view_columntext):
             self.word_treeview.heading(column_name, text=column_text)
 
-        self.word_treeview.column('c0', width=20, anchor='center')
+        self.word_treeview.column('c0', width=30, anchor='center')
         self.word_treeview.column('c1', width=100, anchor='center')
         self.word_treeview.column('c2', width=260, anchor='center')
         self.word_treeview.pack(side=LEFT, fill=Y)

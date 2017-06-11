@@ -104,6 +104,7 @@ class ReviewFrame():
     def generate_words(self):
         self.cursor.execute("select id, word, meaning from (select * from word_db order by ins_time) \
                             as temp where word_type != 1 or (CURDATE() + 0 - review_time)>=3 limit " + self.num_entry.get())
+        self.conn.commit()
 
         # the result of slef.cursor.fetchall is tuple, now change it to list
         self.review_words_list = list(self.cursor.fetchall())
@@ -126,12 +127,10 @@ class ReviewFrame():
         self.backup_index_list = []
 
     def eng_chi_review(self):
-        print self.random_words_index_list
         self.show_word_entry_value(self.random_words_index_list[0])
         self.clean_meanning_text_value()
 
     def chi_eng_review(self):
-        print self.random_words_index_list
         self.show_meanning_text_value(self.random_words_index_list[0])
         self.clean_word_entry_value()
 
@@ -195,7 +194,7 @@ class ReviewFrame():
             self.remember_bt.configure(state='disabled')
             self.oblivious_bt.configure(state='disabled')
             tkMessageBox.showerror("ERROR INFO", "No words need to review, you can try get review words by start button. "
-                                                 "If hint the error again, maybe you should input words into the database")
+                                                 "If hint the error again, maybe you should input new words into the database")
             raise Exception("ERROR INFO, No words need to review")
 
 ########################################################
@@ -229,14 +228,10 @@ class ReviewFrame():
     def verify_word(self, event=None):
         input_word_value = self.word_entry.get()
         input_word_value = unicode(input_word_value)
-        #input_word_value.strip('\n')
-        #nicodedata.normalize('NFKD', self.review_words_list[current_id][1]).encode('ascii', 'ignore')
-        print (type(input_word_value), type(self.review_words_list[self.random_words_index_list[0]][1]))
-
 
         if cmp(input_word_value, str(self.review_words_list[self.random_words_index_list[0]][1])) != 0:
             tkMessageBox.showerror("Error info", "word spelled wrong, answer is %s, your answer is %s." %\
-                                   (self.review_words_list[self.current_word_index][1], input_word_value))
+                                   (self.review_words_list[self.random_words_index_list[0]][1], input_word_value))
             self.is_oblivious_word()
         else:
             self.is_remember_word()

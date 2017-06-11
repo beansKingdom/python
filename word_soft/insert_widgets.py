@@ -92,21 +92,20 @@ class InsFrame:
         data = self.cursor.fetchone()
         if data[0] != 0:
             tkMessageBox.showerror("ERROR INFO", "This word is existed...")
+            self.clean_insert_entry()
             raise Exception("ERROR INFO, This word is existed...")
+
 
         sql_query = "insert into word_db (id, word, meaning, ins_time, review_time) values \
                     (%d, '%s', '%s', CURDATE() + 0, CURDATE() + 0)" % (self.word_nums, self.word_val, self.mean_val)
         self.cursor.execute(sql_query)
         self.conn.commit()
+        self.clean_insert_entry()
 
-        # clean the entry data
+    def clean_insert_entry(self):
         self.word_var.set("")
         self.meaning_var.set("")
-
         self.wd_entry.focus()
-
-        pass
-        #tkMessageBox.showerror("ERROR INFO", "value can't be null..")
 
     def get_mysql_conf(self):
         gcf.get_config(self.mysql_dict)
