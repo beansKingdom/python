@@ -6,8 +6,11 @@ import matplotlib
 matplotlib.use('Agg')
 
 import numpy as np
-import matplotlib.pyplot as plt
 import os,sys
+import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
+import matplotlib.lines as mlines
+
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
 img_dir = script_dir +  "/static"
@@ -17,13 +20,23 @@ print (file_path)
 
 data = np.loadtxt(file_path, delimiter=';', usecols=range(3))
 
-plt.figure(figsize=(4,3))
 plt.subplot(111)
 
 plt.semilogx(data[:,0], data[:,1], 'red', basex=2)
-plt.semilogx(data[:,0], data[:,2], 'green', basex=2)
+plt.semilogx(data[:,0], data[:,2], 'black', basex=2)
 
-plt.title('semilogx')
+plt.xlabel('thread_nums')
+plt.ylabel('qps')
+
+#blue_line = mlines.Line2D([], [], color='blue', marker='*',
+ #                 markersize=15, label='MYSQL')
+blue_line = mpatches.Patch(color='black', label='MYSQL')
+red_line = mpatches.Patch(color='red', label='MYCAT')
+
+lines = [blue_line, red_line]
+labels = [line.get_label() for line in lines]
+plt.legend(lines, labels)
+
 plt.grid(True)
 
 print (file_name, type(file_name))
