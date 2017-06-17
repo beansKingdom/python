@@ -38,7 +38,7 @@ class ReviewFrame():
 
         num_value = StringVar()
         self.num_entry = Entry(self.root, textvariable=num_value, width=6)
-        num_value.set("50")
+        num_value.set("5")
         self.num_entry.grid(row=0, column=1, sticky=W)
 
         # the review types : english - chinese or chinese - english or mix
@@ -81,7 +81,16 @@ class ReviewFrame():
             self.remember_bt.configure(state='disabled')
             self.oblivious_bt.configure(state='disabled')
 
-        self.current_word_index = self.random_words_index_list[0]
+    def generate_words(self):
+        self.cursor.execute("select id, word, meaning from (select * from word_db order by ins_time) \
+                            as temp where word_type != 1 or (CURDATE() + 0 - review_time)>=3 limit " + self.num_entry.get())
+        self.conn.commit()
+
+        # the result of slef.cursor.fetchall is tuple, now change it to list
+        self.review_words_list = list(self.cursor.fetchall())
+
+        self.remaining_review_words_nums_check(self.review_words_list)
+        self.random_review_words()
 
     def judge_review_type(self):
         self.review_type = self.review_type_combobox.current()
@@ -101,31 +110,6 @@ class ReviewFrame():
         else:
             pass
 
-    def generate_words(self):
-        self.cursor.execute("select id, word, meaning from (select * from word_db order by ins_time) \
-                            as temp where word_type != 1 or (CURDATE() + 0 - review_time)>=3 limit " + self.num_entry.get())
-        self.conn.commit()
-
-        # the result of slef.cursor.fetchall is tuple, now change it to list
-        self.review_words_list = list(self.cursor.fetchall())
-        self.remaining_review_words_nums_check(self.review_words_list)
-        self.random_review_words()
-
-    def random_review_words(self):
-        self.words_id_list = []
-        for key in self.review_words_list:
-            self.words_id_list.append(key[0])
-
-        self.random_words_id_list = random.sample(self.words_id_list, len(self.review_words_list))  # generate random review words_id_list
-
-        # get the index from random_words_id_list, because the random_words_id_list's element just is word's id,
-        # but we need the id's index in words_id_list
-        self.random_words_index_list = []
-        for key in self.random_words_id_list:
-            self.random_words_index_list.append(self.words_id_list.index(key))
-
-        self.backup_index_list = []
-
     def eng_chi_review(self):
         self.show_word_entry_value(self.random_words_index_list[0])
         self.clean_meanning_text_value()
@@ -133,6 +117,34 @@ class ReviewFrame():
     def chi_eng_review(self):
         self.show_meanning_text_value(self.random_words_index_list[0])
         self.clean_word_entry_value()
+
+    def random_review_words(self):
+        self.review_words_id_list = []
+        for key in self.review_words_list:
+            self.review_words_id_list.append(key[0])
+
+
+        #######debug###################
+        word_list = []
+        word_id = []
+        for word in self.review_words_list:
+            word_list.append(word[1])
+            word_id.append(word[0])
+        print ("word is %s, word_id is %s" % (word_list, word_id))
+        #############################
+
+        self.random_words_id_list = random.sample(self.review_words_id_list, len(self.review_words_list))  # generate random review words_id_list
+
+        # get the index from random_words_id_list, because the random_words_id_list's element just is word's id,
+        # but we need the id's index in words_id_list
+        self.random_words_index_list = []
+        for key in self.random_words_id_list:
+            self.random_words_index_list.append(self.review_words_id_list.index(key))
+
+        print ("random_words_index_list is %s, random_word_id_list is %s" % (self.random_words_index_list, self.random_words_id_list))
+        self.backup_index_list = []
+
+
 
     def is_remember_word(self):
         self.remember_oblivious_operate("remember")
@@ -153,8 +165,17 @@ class ReviewFrame():
         self.show_meanning_text_value(self.current_word_index)
 
     def remember_oblivious_operate(self, word_type):
+        self.current_word_index = self.random_words_index_list[0]
+        self.current_word_id = self.review_words_id_list[self.random_words_index_list[0]]
+
+        print ("current_word_index is %d , current_word_id is %d" % (self.current_word_index, self.current_word_id))
+
+        self.change_word_type_in_database(word_type)
+
+        #############debug
+        print ("word type is %s, word is %s, query is %s" % (word_type, self.review_words_list[self.current_word_index][1], self.query))
         self.change_random_and_backup_list()
-        self.change_word_type_in_database(self.current_word_id, word_type)
+
         self.remaining_review_words_nums_check(self.random_words_index_list)
         if self.review_type == 1:
             self.eng_chi_review()
@@ -162,16 +183,14 @@ class ReviewFrame():
             self.chi_eng_review()
 
     def change_random_and_backup_list(self):
-        self.current_word_index = self.random_words_index_list[0]
-        self.current_word_id = self.random_words_id_list[self.current_word_index]
         self.backup_index_list.append(self.random_words_index_list[0])
         self.random_words_index_list.pop(0)
 
-    def change_word_type_in_database(self, word_id, change_type):
+    def change_word_type_in_database(self, change_type):
         if change_type == "remember":
-            self.query = "update word_db set word_type = 1,review_count = review_count+1, review_time = (CURDATE() + 0) where id = " + str(word_id)
+            self.query = "update word_db set word_type = 1,review_count = review_count+1, review_time = (CURDATE() + 0) where id = " + str(self.current_word_id)
         elif change_type == "oblivious":
-            self.query = "update word_db set word_type = 0 where id = " + str(word_id)
+            self.query = "update word_db set word_type = 0 where id = " + str(self.current_word_id)
         self.cursor.execute(self.query)
         self.conn.commit()
 
@@ -223,7 +242,6 @@ class ReviewFrame():
         self.meaning_scrolledtext.delete('1.0', END)
         self.meaning_scrolledtext.insert('1.0', self.review_words_list[index][2])
         self.meaning_scrolledtext.configure(state='disabled')
-##########################################################
 
     def verify_word(self, event=None):
         input_word_value = self.word_entry.get()

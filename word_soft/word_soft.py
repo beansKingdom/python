@@ -19,8 +19,7 @@ class MainFrame:
         self.root.title(" word_soft ")
         self.root.resizable(0, 0)                                           # disable resizing the gui
         self.center_window(self.gui_width, self.gui_height)                 # make the gui in the screen's center
-        # bug: not every one has the path
-        #self.root.iconbitmap(r'E:\software\python\DLLs\pyc.ico')            # Change the main windows icon
+        self.root.iconbitmap(r'E:\software\python\DLLs\pyc.ico')            # Change the main windows icon
 
         tabControl = ttk.Notebook(self.root)
         self.main_function_tab = ttk.Frame(tabControl)

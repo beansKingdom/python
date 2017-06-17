@@ -13,7 +13,8 @@ class InsFrame:
         self.lb_conf = { 'width':12, "anchor": W, "font": 15, "justify": LEFT }
         self.mysql_dict = {}
         self.get_mysql_conf()
-        self.is_conn = 0            # 0 : unconnect mysql 1: connect mysql
+        self.connect_mysql()
+        #self.is_conn = 0            # 0 : unconnect mysql 1: connect mysql
 
     def show(self):
         # add label control
@@ -24,6 +25,7 @@ class InsFrame:
         self.meaning_var = StringVar()
         self.word_var = StringVar()
         self.wd_entry = Entry(self.root, textvariable=self.word_var, bd=1)
+        self.wd_entry.bind('<FocusOut>', self.check_word_is_exsited)
         self.mean_entry = Entry(self.root, textvariable=self.meaning_var, bd=1)
         self.wd_entry.grid(row=0, column=1, sticky=W)
         self.mean_entry.bind('<Return>', self.insert)
@@ -36,7 +38,6 @@ class InsFrame:
 
         # Add a Tooltip to the ScrolledText widget
         tltp.createToolTip(insert_bt, 'Stored the word into mysql.')
-
 
     def connect_mysql(self):
         try:
@@ -70,10 +71,19 @@ class InsFrame:
             tkMessageBox.showerror("ERROR INFO", "Max length is 50,%s data is too long..." % type)
             raise Exception("ERROR INFO, Max length is 100,%s data is too long..." % type)
 
+    def check_word_is_exsited(self, event=None):
+        word_value = self.wd_entry.get()
+        self.cursor.execute("select count(0) from word_db where word = '%s'" % word_value)
+        result = self.cursor.fetchone()
+        if result[0] == 1:
+            self.wd_entry['fg'] = 'red'
+        else:
+            self.wd_entry['fg'] = 'black'
+
     def insert(self, event=None):
-        if self.is_conn == 0:
-            self.connect_mysql()
-            self.is_conn = 1
+        # if self.is_conn == 0:
+        #     self.connect_mysql()
+        #     self.is_conn = 1
 
         # get the entry input
         self.word_val = self.wd_entry.get().strip()
