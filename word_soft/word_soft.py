@@ -6,20 +6,21 @@ import query_widgets as qry
 import review_widgets as rev
 import menu_bar
 import ttk
-import get_conf as gcf
+from mysql_func import ConnectMysql
 import pymysql
 import tkMessageBox
 
 class MainFrame:
     def __init__(self, parent=None):
         self.root = parent
+        self.connect_mysql()
         self.gui_width = 400
         self.gui_height = 430
 
         self.root.title(" word_soft ")
         self.root.resizable(0, 0)                                           # disable resizing the gui
         self.center_window(self.gui_width, self.gui_height)                 # make the gui in the screen's center
-        self.root.iconbitmap(r'E:\software\python\DLLs\pyc.ico')            # Change the main windows icon
+        #self.root.iconbitmap(r'D:\Python27\DLLs\pyc.ico')            # Change the main windows icon
 
         tabControl = ttk.Notebook(self.root)
         self.main_function_tab = ttk.Frame(tabControl)
@@ -30,6 +31,12 @@ class MainFrame:
 
         self.main_function_tab_show()
         self.word_list_tab_show()
+
+    def connect_mysql(self):
+        myconn = ConnectMysql()
+        myconn.connect_mysql()
+        self.conn = myconn.conn
+        self.cursor = self.conn.cursor()
 
     def main_function_tab_show(self):
         # add a labelframe widget
@@ -70,9 +77,6 @@ class MainFrame:
         self.word_list_frame.pack()
         self.word_list_frame.pack_propagate(0)
 
-        self.mysql_dict = {}
-        self.get_mysql_conf()
-        self.connect_mysql()
         self.get_data_from_database()
         self.show_button_frame()
         self.show_display_data_frame()
@@ -182,19 +186,6 @@ class MainFrame:
         screenheight = self.root.winfo_screenheight()
         size = '%dx%d+%d+%d' % (width, height, (screenwidth - width)/2, (screenheight - height)/2)
         self.root.geometry(size)
-
-    def connect_mysql(self):
-        try:
-            # self.conn   : the connect of mysql
-            self.conn = pymysql.connect(self.mysql_dict['my_host'], self.mysql_dict['my_user'], self.mysql_dict['my_passwd'],
-                                        self.mysql_dict['my_dbname'],int(self.mysql_dict['my_port']), charset='utf8')
-        except pymysql.Error as err:
-            tkMessageBox.showerror("ERROR INFO", "Mysql Error %d: %s" % (err.args[0], err.args[1]))
-            raise Exception("ERROR INFO : Mysql Error %d: %s" % (err.args[0], err.args[1]))
-        self.cursor = self.conn.cursor()
-
-    def get_mysql_conf(self):
-        gcf.get_config(self.mysql_dict)
 
     def get_word_info_in_treeview(self, event=None):
         curitem = self.word_treeview.focus()
