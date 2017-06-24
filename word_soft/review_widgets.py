@@ -6,29 +6,20 @@ import ScrolledText as tkst
 import toolstips as tltp
 import ttk
 import pymysql
-import get_conf as gcf
+from mysql_func import ConnectMysql
 import random
-import unicodedata
 
-class ReviewFrame():
+
+class ReviewFrame:
     def __init__(self, parent):
         self.root = parent
-        self.mysql_dict = {}
-        self.get_mysql_conf()
         self.connect_mysql()
         self.show()
 
-    def get_mysql_conf(self):
-        gcf.get_config(self.mysql_dict)
-
     def connect_mysql(self):
-        try:
-            # self.conn   : the connect of mysql
-            self.conn = pymysql.connect(self.mysql_dict['my_host'], self.mysql_dict['my_user'], self.mysql_dict['my_passwd'],
-                                        self.mysql_dict['my_dbname'],int(self.mysql_dict['my_port']), charset='utf8')
-        except pymysql.Error as err:
-            tkMessageBox.showerror("ERROR INFO", "Mysql Error %d: %s" % (err.args[0], err.args[1]))
-            raise Exception("ERROR INFO : Mysql Error %d: %s" % (err.args[0], err.args[1]))
+        myconn = ConnectMysql()
+        myconn.connect_mysql()
+        self.conn = myconn.conn
         self.cursor = self.conn.cursor()
 
     def show(self):

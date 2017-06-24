@@ -4,17 +4,20 @@ from Tkinter import *
 import pymysql
 import tkMessageBox
 import re
-import get_conf as gcf
 import toolstips as tltp
+from mysql_func import ConnectMysql
 
 class InsFrame:
     def __init__(self, parent):
         self.root = parent
         self.lb_conf = { 'width':12, "anchor": W, "font": 15, "justify": LEFT }
-        self.mysql_dict = {}
-        self.get_mysql_conf()
         self.connect_mysql()
-        #self.is_conn = 0            # 0 : unconnect mysql 1: connect mysql
+
+    def connect_mysql(self):
+        myconn = ConnectMysql()
+        myconn.connect_mysql()
+        self.conn = myconn.conn
+        self.cursor = self.conn.cursor()
 
     def show(self):
         # add label control
@@ -38,16 +41,6 @@ class InsFrame:
 
         # Add a Tooltip to the ScrolledText widget
         tltp.createToolTip(insert_bt, 'Stored the word into mysql.')
-
-    def connect_mysql(self):
-        try:
-            # self.conn   : the connect of mysql
-            self.conn = pymysql.connect(self.mysql_dict['my_host'], self.mysql_dict['my_user'], self.mysql_dict['my_passwd'],
-                                        self.mysql_dict['my_dbname'],int(self.mysql_dict['my_port']), charset='utf8')
-        except pymysql.Error as err:
-            tkMessageBox.showerror("ERROR INFO", "Mysql Error %d: %s" % (err.args[0], err.args[1]))
-            raise Exception("ERROR INFO : Mysql Error %d: %s" % (err.args[0], err.args[1]))
-        self.cursor = self.conn.cursor()
 
     def check_entry_val(self, type):
         if type == "word":
@@ -81,10 +74,6 @@ class InsFrame:
             self.wd_entry['fg'] = 'black'
 
     def insert(self, event=None):
-        # if self.is_conn == 0:
-        #     self.connect_mysql()
-        #     self.is_conn = 1
-
         # get the entry input
         self.word_val = self.wd_entry.get().strip()
         self.mean_val = self.mean_entry.get().encode('utf-8')
@@ -105,7 +94,6 @@ class InsFrame:
             self.clean_insert_entry()
             raise Exception("ERROR INFO, This word is existed...")
 
-
         sql_query = "insert into word_db (id, word, meaning, ins_time, review_time) values \
                     (%d, '%s', '%s', CURDATE() + 0, CURDATE() + 0)" % (self.word_nums, self.word_val, self.mean_val)
         self.cursor.execute(sql_query)
@@ -116,9 +104,6 @@ class InsFrame:
         self.word_var.set("")
         self.meaning_var.set("")
         self.wd_entry.focus()
-
-    def get_mysql_conf(self):
-        gcf.get_config(self.mysql_dict)
 
     def get_word_nums(self):
         try:
@@ -132,6 +117,5 @@ class InsFrame:
 #=======================================
 def display_widgets(parent):
     ins = InsFrame(parent)
-
     ins.show()
 
