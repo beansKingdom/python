@@ -36,8 +36,13 @@ class QueryFrame:
             self.meaning_scrolledtext = tkst.ScrolledText(master = self.win, bg='beige', width=50, height=5 )
             self.meaning_scrolledtext.grid(column=0, columnspan=2, sticky=W)
 
-
+        self.win.protocol("WM_DELETE_WINDOW", self.on_closing)
         self.display_res()
+
+    def on_closing(self):
+        self.win.destroy()
+        print ("close search toplevel")
+        self.create_top = 0
 
     def display_res(self):
         self.meaning_scrolledtext['state'] = 'normal'
@@ -50,6 +55,5 @@ class QueryFrame:
         self.meaning_scrolledtext['state'] = 'disabled'
 #=======================================
 def display_widgets(parent):
-    ins = QueryFrame(parent)
-
-    ins.show()
+    query = QueryFrame(parent)
+    query.show()
