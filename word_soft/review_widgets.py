@@ -88,7 +88,7 @@ class ReviewFrame:
 
         if self.review_type == 0:
             tkMessageBox.showerror("ERROR INFO", "You should choose one item from review_type")
-            return 0
+            raise Exception("ERROR INFO, Not choose a review type")
         elif self.review_type == 1:
             self.verify_word_bt.configure(state='disabled')
             self.show_meaning_bt.configure(state='normal')
