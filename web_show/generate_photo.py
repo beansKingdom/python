@@ -21,9 +21,11 @@ class GeneratePng():
         if (len(sys.argv) < 3):
             self.usage()
         else:
-            print (len(sys.argv))
-            self.filename = sys.argv[1]
-            self.data_filename = self.filename + ".csv"
+            self.data_filename = sys.argv[1]
+            if sys.argv[1][-4:] == '.csv': 
+                self.filename = sys.argv[1][:-4]
+            else:
+                raise Exception("Error, filename is wrong, it expect xxx.csv")
             self.linetype = sys.argv[2] 
             
         pattern = re.compile(r'^\d+$')
@@ -78,7 +80,6 @@ class GeneratePng():
             elif self.linetype == 'exponent':
                 raise Exception("Error, Not complete... exit")
             else:
-                self.usage()
                 raise Exception("Error, error linetype arguments")
                 
         self.sign_lines()
