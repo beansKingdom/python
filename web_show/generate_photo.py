@@ -60,23 +60,26 @@ class GeneratePng():
                     raise Exception("Error, Too many columns data in %s, the max columns is 6", self.data_filename)
 
     def get_data_from_datafile(self):
-        self.data = np.loadtxt(self.data_filepath, delimiter=';', usecols=range(len(self.lines_name_list)+1), skiprows=1)
-        if len(self.data[0]) != (len(self.lines_name_list)+1):
+        self.data = np.loadtxt(self.data_filepath, delimiter=';', usecols=range(len(self.lines_name_list)), skiprows=1)
+        if len(self.data[0]) != len(self.lines_name_list):
             raise Exception("Error, data columns isn't equal to lines'name numbers")
 
     def check_data(self):
         for i in range(len(self.lines_name_list)):
-            if len(self.data[:, 0]) != len(self.data[:, i+1]):
+            if len(self.data[:, 0]) != len(self.data[:, i]):
                 raise Exception("Error, data's rows number isn't same")
 
     def generate_png(self):
         plt.subplot(111)
         self.check_data()
+        data_length = len(self.data[:, 0])
         for i in range(len(self.lines_name_list)):
             if self.linetype == 'linear':
-                plt.plot(self.data[:, 0], self.data[:, i+1], self.lines_color_list[i])
+                self.x_point = [x for x in range(data_length)]
+                plt.plot(self.x_point, self.data[:, i], self.lines_color_list[i])
             elif self.linetype == 'logarithm':
-                plt.semilogx(self.data[:, 0], self.data[:, i+1], self.lines_color_list[i], basex=self.base_num)
+                self.x_point = [self.base_num ** x for x in range(data_length)] 
+                plt.semilogx(self.x_point, self.data[:, i], self.lines_color_list[i], basex=self.base_num)
             elif self.linetype == 'exponent':
                 raise Exception("Error, Not complete... exit")
             else:
