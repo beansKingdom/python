@@ -36,6 +36,7 @@ class show_menubar():
         myconn.connect_mysql()
         self.conn = myconn.conn
         self.cursor = self.conn.cursor()
+        self.mysql_dict = myconn.mysql_dict
         
     def quit(self):
         self.root.quit()
@@ -45,22 +46,25 @@ class show_menubar():
     def import_data_pre(self):
         self.cursor.execute("show tables")
         table_list = list(self.cursor.fetchall())
-        for key in table_list:
-            if key[0] == unicode("word_db"):
-                self.show_import_warn_info() 
-            else:
-                self.import_data()
+        if len(table_list) != 0:
+            for tbname in table_list:
+                if tbname[0] == unicode("word_db"):
+                    self.show_import_warn_info()
+                    break
+        else:
+            self.import_data()
+
         return 0
      
     def show_import_warn_info(self):
         self.message_win = Toplevel()
         self.import_value = 0
-        warn_label = Label(self.message_win, text="word_db is existed, click confirm button cover the table's data")
-        confirm_bt = Button(self.message_win, text="confirm", command=self.import_data)
-        cancel_bt = Button(self.message_win, text="cancel", command=self.cancel)
-        warn_label.grid(row=0)
-        confirm_bt.grid(row=1)
-        cancel_bt.grid(row=1, column=1)        
+        warn_label = Label(self.message_win, text="table 'word_db' is existed, click confirm button cover the table's data or cancel to quit")
+        confirm_bt = Button(self.message_win, text="confirm", command=self.confirm, width=10)
+        cancel_bt = Button(self.message_win, text="cancel", command=self.cancel, width=10)
+        warn_label.grid(row=0, padx=8, pady=5, columnspan=2)
+        confirm_bt.grid(row=1, padx=8, pady=5 , sticky = W)
+        cancel_bt.grid(row=1, column=1, padx=8, pady=5 , sticky = W)
         
     def import_data(self):
         try:
@@ -71,8 +75,11 @@ class show_menubar():
             raise Exception("ERROR INFO : Mysql Error %d: %s" % (err.args[0], err.args[1]))
         finally:
             tkMessageBox.showinfo("Info", "Import data sucessed")
-            self.message_win.destroy()
-        
+
+    def confirm(self):
+        self.import_data()
+        self.message_win.destroy()
+
     def cancel(self):
         self.message_win.destroy()
 

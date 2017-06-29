@@ -14,7 +14,7 @@ class MainFrame:
     def __init__(self, parent=None):
         self.root = parent
         self.connect_mysql()
-        self.gui_width = 400
+        self.gui_width = 440
         self.gui_height = 430
 
         self.root.title(" word_soft ")
@@ -42,10 +42,12 @@ class MainFrame:
         # add a labelframe widget
         self.lb_frame = LabelFrame(self.main_function_tab, bd=0, width=self.gui_width, height=self.gui_height)
         self.lb_frame.grid()
-        self.lb_frame.grid_propagate(0)                                     # Prevent the frame size from changing with the control
+        self.lb_frame.grid_propagate(0)
+
+        menu_bar.display_menubar(self.root)
 
         # create a child label frame, and put the insert_widgets in the frame
-        self.child_ins_frame =  LabelFrame(self.lb_frame, text="insert", bd=2, width=390, height=100)
+        self.child_ins_frame =  LabelFrame(self.lb_frame, text="insert", bd=2, width=self.gui_width-10, height=100)
         self.child_ins_frame.grid(row=0)
         self.child_ins_frame.grid_propagate(0)
         ins.display_widgets(self.child_ins_frame)
@@ -54,7 +56,7 @@ class MainFrame:
 
 
         # create a child label frame, and put the query_widgets in the frame
-        self.child_qry_frame =  LabelFrame(self.lb_frame, bd=2, text="query", width=390, height=62)
+        self.child_qry_frame =  LabelFrame(self.lb_frame, bd=2, text="query", width=self.gui_width-10, height=62)
         self.child_qry_frame.grid(row=1)
         self.child_qry_frame.grid_propagate(0)
         qry.display_widgets(self.child_qry_frame)
@@ -62,14 +64,13 @@ class MainFrame:
             child.grid_configure(padx=8, pady=5)
 
         # create a child label frame, and put the review_widgets in the frame
-        self.child_rev_frame =  LabelFrame(self.lb_frame, bd=2, text="review", width=390, height=210)
+        self.child_rev_frame =  LabelFrame(self.lb_frame, bd=2, text="review", width=self.gui_width-10, height=210)
         self.child_rev_frame.grid(row=2)
         self.child_rev_frame.grid_propagate(0)
         rev.display_widgets(self.child_rev_frame)
         for child in self.child_rev_frame.winfo_children():                 # Change the padding which widgets in the label frame
             child.grid_configure(padx=8, pady=5)
 
-        menu_bar.display_menubar(self.root)
 
     def word_list_tab_show(self):
         # add a labelframe widget
@@ -77,9 +78,9 @@ class MainFrame:
         self.word_list_frame.pack()
         self.word_list_frame.pack_propagate(0)
 
-        self.get_data_from_database()
         self.show_button_frame()
         self.show_display_data_frame()
+        self.check_table_status()
 
     def show_display_data_frame(self):
         self.display_data_frame = LabelFrame(self.word_list_frame,bd=0, width=self.gui_width, height=self.gui_height-100)
@@ -97,16 +98,15 @@ class MainFrame:
         for (column_name, column_text) in zip(tree_view_columnname, tree_view_columntext):
             self.word_treeview.heading(column_name, text=column_text)
 
-        self.word_treeview.column('c0', width=30, anchor='center')
-        self.word_treeview.column('c1', width=100, anchor='center')
-        self.word_treeview.column('c2', width=260, anchor='center')
+        self.word_treeview.column('c0', width=int(self.gui_width*0.075), anchor='center')
+        self.word_treeview.column('c1', width=int(self.gui_width*0.25), anchor='center')
+        self.word_treeview.column('c2', width=int(self.gui_width*0.65), anchor='center')
         self.word_treeview.pack(side=LEFT, fill=Y)
         self.word_treeview.bind('<ButtonRelease-1>',  self.get_word_info_in_treeview)
         self.each_page_show_words_num = 0
         self.current_page = 1
 
         scrollBar.config(command=self.word_treeview.yview)
-        self.word_treeview_show_data()
 
     def show_button_frame(self):
         self.button_frame = LabelFrame(self.word_list_frame, bd=1, width=self.gui_width, height=30)
@@ -129,6 +129,17 @@ class MainFrame:
         self.search_word_bt.pack(padx=3, pady=1, side=LEFT)
         self.delete_word_bt.pack(padx=3, pady=1, side=LEFT)
         self.refresh_word_bt.pack(padx=3, pady=1, side=LEFT)
+
+    def check_table_status(self):
+        self.cursor.execute("show tables")
+        data = self.cursor.fetchall()
+        for tbname in data:
+            if tbname[0] == unicode("word_db"):
+                self.get_data_from_database()
+                self.word_treeview_show_data()
+                return 0
+
+        tkMessageBox.showerror("Error", "Error Not found table 'word_db', you can import data or create table 'word_db' in database")
 
     def word_treeview_show_data(self):
         self.delete_treeview_data()
