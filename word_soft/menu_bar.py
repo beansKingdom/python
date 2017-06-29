@@ -1,16 +1,14 @@
 # -*- coding: UTF-8 -*-
 
 from Tkinter import *
-import get_conf as gcf
 import pymysql
 import os
 import tkMessageBox
+from mysql_func import ConnectMysql
 
 class show_menubar():
     def __init__(self, original=None, mysql_info=None):
         self.root = original
-        self.mysql_dict = {}
-        self.get_mysql_conf()
         self.connect_mysql()
 
         # get the script's directory
@@ -24,7 +22,7 @@ class show_menubar():
         # create a menu item which called operation, and add functions
         oper_menu = Menu(menubar)
         menubar.add_cascade(label="operation", menu=oper_menu)
-        oper_menu.add_command(label="import words", command=self.import_data)
+        oper_menu.add_command(label="import words", command=self.import_data_pre)
         oper_menu.add_command(label="export words", command=self.export_data)
         oper_menu.add_command(label="exit", command=self.quit)
 
@@ -32,33 +30,39 @@ class show_menubar():
         help_menu = Menu(menubar)
         menubar.add_cascade(label="Help", menu=help_menu)
         help_menu.add_command(label="about")
-
-    def get_mysql_conf(self):
-        gcf.get_config(self.mysql_dict)
-
+        
     def connect_mysql(self):
-        try:
-            # self.conn   : the connect of mysql
-            self.conn = pymysql.connect(self.mysql_dict['my_host'], self.mysql_dict['my_user'], self.mysql_dict['my_passwd'],
-                                        self.mysql_dict['my_dbname'],int(self.mysql_dict['my_port']), charset='utf8')
-        except pymysql.Error as err:
-            tkMessageBox.showerror("ERROR INFO", "Mysql Error %d: %s" % (err.args[0], err.args[1]))
-            raise Exception("ERROR INFO : Mysql Error %d: %s" % (err.args[0], err.args[1]))
+        myconn = ConnectMysql()
+        myconn.connect_mysql()
+        self.conn = myconn.conn
         self.cursor = self.conn.cursor()
-
+        
     def quit(self):
         self.root.quit()
         self.root.destroy()
         exit()
 
-    def import_data(self):
+    def import_data_pre(self):
         self.cursor.execute("show tables")
         table_list = list(self.cursor.fetchall())
         for key in table_list:
             if key[0] == unicode("word_db"):
-                tkMessageBox.showwarning("ERROR INFO", "The word_db table is exiest, can't import...")
-                raise Exception("ERROR INFO : The word_db table is exiest, can't import...")
-
+                self.show_import_warn_info() 
+            else:
+                self.import_data()
+        return 0
+     
+    def show_import_warn_info(self):
+        self.message_win = Toplevel()
+        self.import_value = 0
+        warn_label = Label(self.message_win, text="word_db is existed, click confirm button cover the table's data")
+        confirm_bt = Button(self.message_win, text="confirm", command=self.import_data)
+        cancel_bt = Button(self.message_win, text="cancel", command=self.cancel)
+        warn_label.grid(row=0)
+        confirm_bt.grid(row=1)
+        cancel_bt.grid(row=1, column=1)        
+        
+    def import_data(self):
         try:
             os.system("mysql -u%s -p%s -h%s -P%s %s < %s" % (self.mysql_dict['my_user'], self.mysql_dict['my_passwd'], self.mysql_dict['my_host'], \
                    int(self.mysql_dict['my_port']),self.mysql_dict['my_dbname'], self.directory))
@@ -67,8 +71,10 @@ class show_menubar():
             raise Exception("ERROR INFO : Mysql Error %d: %s" % (err.args[0], err.args[1]))
         finally:
             tkMessageBox.showinfo("Info", "Import data sucessed")
-
-        return 0
+            self.message_win.destroy()
+        
+    def cancel(self):
+        self.message_win.destroy()
 
     def export_data(self):
         try:
