@@ -11,13 +11,16 @@ class InsFrame:
     def __init__(self, parent):
         self.root = parent
         self.lb_conf = { 'width':12, "anchor": W, "font": 15, "justify": LEFT }
-        self.connect_mysql()
 
     def connect_mysql(self):
         myconn = ConnectMysql()
         myconn.connect_mysql()
         self.conn = myconn.conn
         self.cursor = self.conn.cursor()
+
+    def close_mysql(self):
+        self.cursor.close()
+        self.conn.close()
 
     def show(self):
         # add label control
@@ -40,7 +43,7 @@ class InsFrame:
         insert_bt.grid(row=0, column=3, rowspan=2, sticky=W)
 
         # Add a Tooltip to the ScrolledText widget
-        tltp.createToolTip(insert_bt, 'Stored the word into mysql.')
+        tltp.createToolTip(insert_bt, 'Stored the word in database.')
 
     def check_entry_val(self, type):
         if type == "word":
@@ -65,39 +68,41 @@ class InsFrame:
             raise Exception("ERROR INFO, Max length is 100,%s data is too long..." % type)
 
     def check_word_is_exsited(self, event=None):
+        self.connect_mysql()
         word_value = self.wd_entry.get()
         self.cursor.execute("select count(0) from word_db where word = '%s'" % word_value)
         result = self.cursor.fetchone()
+        self.close_mysql()
         if result[0] == 1:
             self.wd_entry['fg'] = 'red'
+            return 1
         else:
             self.wd_entry['fg'] = 'black'
+        return 0
 
     def insert(self, event=None):
         # get the entry input
         self.word_val = self.wd_entry.get().strip()
         self.mean_val = self.mean_entry.get().encode('utf-8')
 
-        # get the insert query id
-        self.word_nums = self.get_word_nums() + 1
-
         # check input is not null 、too big and word format
         self.check_entry_val("word")
         self.check_entry_val("meaning")
 
-        # check the word is existed??
-        check_query = "select count(0) from word_db where word = '%s'" % self.word_val
-        self.cursor.execute(check_query)
-        data = self.cursor.fetchone()
-        if data[0] != 0:
-            tkMessageBox.showerror("ERROR INFO", "This word is existed...")
+        if self.check_word_is_exsited() != 0:
             self.clean_insert_entry()
-            raise Exception("ERROR INFO, This word is existed...")
+            tkMessageBox.showerror("Error", "This word is existed...")
+            raise  Exception("Error, this word is existed...")
+        else:
+            self.connect_mysql()
+            # get the insert query id
+            self.query_id = self.generate_query_id() + 1
+            sql_query = "insert into word_db (id, word, meaning, ins_time, review_time) values \
+                    (%d, '%s', '%s', CURDATE() + 0, CURDATE() + 0)" % (self.query_id, self.word_val, self.mean_val)
+            self.cursor.execute(sql_query)
+            self.conn.commit()
+            self.close_mysql()
 
-        sql_query = "insert into word_db (id, word, meaning, ins_time, review_time) values \
-                    (%d, '%s', '%s', CURDATE() + 0, CURDATE() + 0)" % (self.word_nums, self.word_val, self.mean_val)
-        self.cursor.execute(sql_query)
-        self.conn.commit()
         self.clean_insert_entry()
 
     def clean_insert_entry(self):
@@ -105,13 +110,14 @@ class InsFrame:
         self.meaning_var.set("")
         self.wd_entry.focus()
 
-    def get_word_nums(self):
+    def generate_query_id(self):
         try:
-            self.cursor.execute("select count(0) from word_db")
+            self.cursor.execute("select id from word_db order by id desc limit 1;")
         except pymysql.Error as err:
             tkMessageBox.showerror("ERROR INFO", "Mysql Error %d: %s" % (err.args[0], err.args[1]))
             raise Exception("ERROR INFO : Mysql Error %d: %s" % (err.args[0], err.args[1]))
         data = self.cursor.fetchone()
+
         return data[0]
 
 #=======================================
